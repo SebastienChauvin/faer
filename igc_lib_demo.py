@@ -5,6 +5,7 @@ import os
 import sys
 
 import igc_lib
+from igc_lib import FlightParsingConfig
 import lib.dumpers as dumpers
 from datetime import date
 
@@ -17,12 +18,16 @@ def eprint(*args, **kwargs):
 
 def main():
     if len(sys.argv) < 2:
-        eprint("Usage: %s file.igc [file.lkt]" % sys.argv[0])
+        eprint("Usage: %s file.igc [exit altitude]" % sys.argv[0])
         sys.exit(1)
 
     input_file = sys.argv[1]
 
-    flight = igc_lib.Flight.create_from_file(input_file)
+    config = FlightParsingConfig
+    if len(sys.argv) > 2:
+        config.exit_altitude = int(sys.argv[2])
+
+    flight = igc_lib.Flight.create_from_file(input_file, config)
     if not flight.valid:
         eprint("Provided flight is invalid:")
         eprint(flight.notes)

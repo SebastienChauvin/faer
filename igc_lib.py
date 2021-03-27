@@ -111,13 +111,14 @@ class Cylinder:
 class Exit:
     def __init__(self, location, takeoff, start, exit):
         self.location = location
+        self.start = start
         self.total = exit.rawtime - takeoff.rawtime
         self.start_to_exit = exit.rawtime - start.rawtime
         self.takeoff_to_start = start.rawtime - takeoff.rawtime
 
     def __str__(self):
         return (
-            "%d, %d, %d, %s" % (self.total, self.start_to_exit, self.takeoff_to_start, self.location))
+            "%02d:%02d:%02d, %d, %d, %d, %s" % (_rawtime_float_to_hms(self.start.rawtime) + (self.total, self.start_to_exit, self.takeoff_to_start, self.location)))
 
 class Task:
     """Stores a single flight task definition
@@ -587,6 +588,8 @@ class FlightParsingConfig(object):
     # Minimum time to consider circling a thermal, seconds.
     min_time_for_thermal = 60.0
 
+    # Altitude above which we consider an "exit" (pilot well above take off and ready to go cross country)
+    exit_altitude = 2200
 
 class Flight:
     """Parses IGC file, detects thermals and checks for record anomalies.
@@ -1167,8 +1170,8 @@ class Flight:
 
     def _find_exit(self):
         start_cylinder = Cylinder(44.44325, 6.3715, 1.500, 0, 1400)
-        morgon = Cylinder(44.4917, 6.39669, 4.500, 2200, 9999)
-        dormillouse = Cylinder(44.3988, 6.3857, 3.000, 2200, 9999)
+        morgon = Cylinder(44.4917, 6.39669, 4.500, self._config.exit_altitude, 9999)
+        dormillouse = Cylinder(44.3988, 6.3857, 3.000, self._config.exit_altitude, 9999)
         takeoff_index = self.takeoff_fix.index
         landing_index = self.landing_fix.index
         flight_fixes = self.fixes[takeoff_index:landing_index + 1]
@@ -1187,7 +1190,7 @@ class Flight:
                 elif dormillouse.contains(fix):
                     self.exits.append(Exit("dormillouse", takeoff, start, fix))
                     is_out = True
-                elif fix.alt > 2200:
+                elif fix.alt > self._config.exit_altitude:
                     self.exits.append(Exit("other", takeoff, start, fix))
                     is_out = True
 
