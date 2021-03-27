@@ -6,37 +6,11 @@ import sys
 
 import igc_lib
 import lib.dumpers as dumpers
-
+from datetime import date
 
 def print_flight_details(flight):
-    print("Flight:", flight)
-    print("Takeoff:", flight.takeoff_fix)
-    thermals = flight.thermals
-    glides = flight.glides
-    for i in range(max(len(thermals), len(glides))):
-        if i < len(glides):
-            print("  glide[%d]:" % i, glides[i])
-        if i < len(thermals):
-            print("  thermal[%d]:" % i, thermals[i])
-    print("Landing:", flight.landing_fix)
-
-
-def dump_flight(flight, input_file):
-    input_base_file = os.path.splitext(input_file)[0]
-    wpt_file = "%s-thermals.wpt" % input_base_file
-    cup_file = "%s-thermals.cup" % input_base_file
-    thermals_csv_file = "%s-thermals.csv" % input_base_file
-    flight_csv_file = "%s-flight.csv" % input_base_file
-    kml_file = "%s-flight.kml" % input_base_file
-
-    print("Dumping thermals to %s, %s and %s" %
-          (wpt_file, cup_file, thermals_csv_file))
-    dumpers.dump_thermals_to_wpt_file(flight, wpt_file, True)
-    dumpers.dump_thermals_to_cup_file(flight, cup_file)
-
-    print("Dumping flight to %s and %s" % (kml_file, flight_csv_file))
-    dumpers.dump_flight_to_csv(flight, flight_csv_file, thermals_csv_file)
-    dumpers.dump_flight_to_kml(flight, kml_file)
+    for i in range(len(flight.exits)):
+        print(date.fromtimestamp(flight.date_timestamp).strftime("%d/%m/%y"), ",", flight.pilot_name,",", flight.glider_type, ",", flight.exits[i])
 
 
 def main():
@@ -56,7 +30,6 @@ def main():
         sys.exit(1)
 
     print_flight_details(flight)
-    dump_flight(flight, input_file)
 
     if task_file:
         task = igc_lib.Task.create_from_lkt_file(task_file)

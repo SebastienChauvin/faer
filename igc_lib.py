@@ -94,6 +94,30 @@ class Turnpoint:
         distance = geo.earth_distance(self.lat, self.lon, fix.lat, fix.lon)
         return distance < self.radius
 
+class Cylinder:
+    def __init__(self, lat, lon, radius, minAlt, maxAlt):
+        self.lat = lat
+        self.lon = lon
+        self.radius = radius
+        self.minAlt = minAlt
+        self.maxAlt = maxAlt
+
+    def contains(self, fix):
+        if self.minAlt <= fix.alt <= self.maxAlt:
+            distance = geo.earth_distance(self.lat, self.lon, fix.lat, fix.lon)
+            return distance < self.radius
+        return False
+
+class Exit:
+    def __init__(self, location, takeoff, start, exit):
+        self.location = location
+        self.total = exit.rawtime - takeoff.rawtime
+        self.start_to_exit = exit.rawtime - start.rawtime
+        self.takeoff_to_start = start.rawtime - takeoff.rawtime
+
+    def __str__(self):
+        return (
+            "%d, %d, %d, %s" % (self.total, self.start_to_exit, self.takeoff_to_start, self.location))
 
 class Task:
     """Stores a single flight task definition
@@ -702,6 +726,7 @@ class Flight:
         self._compute_bearing_change_rates()
         self._compute_circling()
         self._find_thermals()
+        self._find_exit()
 
     def _parse_a_records(self, a_records):
         """Parses the IGC A record.
@@ -785,6 +810,13 @@ class Flight:
             if match:
                 (self.fr_pressure_sensor,) = map(_strip_non_printable_chars,
                                                  match.groups())
+        elif record[0:5] == 'HFPLT':
+            match = re.match(
+                'HFPLT.*:[ ]*(.*)',
+                record, flags=re.IGNORECASE)
+            if match:
+                (self.pilot_name,) = map(_strip_non_printable_chars,
+                                                match.groups())
         elif record[0:5] == 'HFCCL':
             match = re.match(
                 'HFCCL[ ]*COMPETITION[ ]*CLASS[ ]*:[ ]*(.*)',
@@ -1132,6 +1164,31 @@ class Flight:
 
         for i in range(len(self.fixes)):
             self.fixes[i].circling = (output[i] == 1)
+
+    def _find_exit(self):
+        start_cylinder = Cylinder(44.44325, 6.3715, 1.500, 0, 1400)
+        morgon = Cylinder(44.4917, 6.39669, 4.500, 2200, 9999)
+        dormillouse = Cylinder(44.3988, 6.3857, 3.000, 2200, 9999)
+        takeoff_index = self.takeoff_fix.index
+        landing_index = self.landing_fix.index
+        flight_fixes = self.fixes[takeoff_index:landing_index + 1]
+        takeoff = flight_fixes[0]
+        is_out = False
+        self.exits = []
+        for fix in flight_fixes:
+            if start_cylinder.contains(fix):
+                start = fix
+                is_out = False
+            if not is_out:
+                if morgon.contains(fix):
+                    self.exits.append(Exit("morgon", takeoff, start, fix))
+                    is_out = True
+                elif dormillouse.contains(fix):
+                    self.exits.append(Exit("dormillouse", takeoff, start, fix))
+                    is_out = True
+                elif fix.alt > 2200:
+                    self.exits.append(Exit("other", takeoff, start, fix))
+                    is_out = True
 
     def _find_thermals(self):
         """Go through the fixes and find the thermals.
