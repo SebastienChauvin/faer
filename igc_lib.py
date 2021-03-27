@@ -1174,12 +1174,13 @@ class Flight:
         flight_fixes = self.fixes[takeoff_index:landing_index + 1]
         takeoff = flight_fixes[0]
         is_out = False
+        start = False
         self.exits = []
         for fix in flight_fixes:
             if start_cylinder.contains(fix):
                 start = fix
                 is_out = False
-            if not is_out:
+            if not is_out and start:
                 if morgon.contains(fix):
                     self.exits.append(Exit("morgon", takeoff, start, fix))
                     is_out = True
