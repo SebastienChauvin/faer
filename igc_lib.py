@@ -1169,9 +1169,9 @@ class Flight:
             self.fixes[i].circling = (output[i] == 1)
 
     def _find_exit(self):
-        start_cylinder = Cylinder(44.44325, 6.3715, 1.500, 0, 1400)
+        start_cylinder = Cylinder(44.4438, 6.3727, 1.500, 0, 1400)
         morgon = Cylinder(44.4917, 6.39669, 4.500, self._config.exit_altitude, 9999)
-        dormillouse = Cylinder(44.3988, 6.3857, 3.000, self._config.exit_altitude, 9999)
+        dormillouse = Cylinder(44.3988, 6.3857, 3.500, self._config.exit_altitude, 9999)
         takeoff_index = self.takeoff_fix.index
         landing_index = self.landing_fix.index
         flight_fixes = self.fixes[takeoff_index:landing_index + 1]
